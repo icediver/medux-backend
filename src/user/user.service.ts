@@ -51,6 +51,9 @@ export class UserService {
 				phone: dto.phone,
 				password: dto.password ? await hash(dto.password) : user.password,
 			},
+			select: {
+				...returnUserObject,
+			},
 		});
 	}
 }
