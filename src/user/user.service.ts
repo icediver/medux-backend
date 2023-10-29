@@ -1,17 +1,19 @@
-import {
-	BadRequestException,
-	Injectable,
-	NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { returnUserObject } from './dto/return-user.object';
 import { Prisma } from '@prisma/client';
 import { UserDto } from './dto/user.dto';
 import { hash } from 'argon2';
+import { GetAllUserDto } from './dto/get-all-users.dto';
+import { EnumUserSort } from './types/enums';
+import { PaginationService } from 'src/pagination/pagination.service';
 
 @Injectable()
 export class UserService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		private paginationService: PaginationService,
+	) {}
 	async byId(id: number, selectObject: Prisma.UserSelect = {}) {
 		const user = await this.prisma.user.findUnique({
 			where: {
@@ -55,5 +57,67 @@ export class UserService {
 				...returnUserObject,
 			},
 		});
+	}
+	async getAll(dto: GetAllUserDto) {
+		const { sort, searchTerm } = dto || {};
+
+		const prismaFilters: Prisma.UserWhereInput[] = [];
+		//add filters
+		//-----------------------
+		// if (type)
+		// 	prismaFilters.push({
+		// 		apartments: {
+		// 			some: {
+		// 				type
+		// 			}
+		// 		}
+		// 	})
+
+		const prismaSort: Prisma.UserOrderByWithRelationInput[] = [];
+		if (sort === EnumUserSort.OLDEST) {
+			prismaSort.push({ createdAt: 'asc' });
+		} else {
+			prismaSort.push({ createdAt: 'desc' });
+		}
+
+		const prismaSearchTermFilter: Prisma.UserWhereInput = searchTerm
+			? {
+					OR: [
+						{
+							name: {
+								contains: searchTerm,
+								mode: 'insensitive',
+							},
+						},
+						{
+							email: {
+								contains: searchTerm,
+								mode: 'insensitive',
+							},
+						},
+					],
+			  }
+			: {};
+
+		const { perPage, skip } = this.paginationService.getPagination(dto);
+
+		const users = await this.prisma.user.findMany({
+			where: {
+				AND: [...prismaFilters, prismaSearchTermFilter],
+			},
+			orderBy: prismaSort,
+			skip,
+			take: perPage,
+			select: { ...returnUserObject },
+		});
+
+		return {
+			users,
+			length: await this.prisma.user.count({
+				where: {
+					AND: [...prismaFilters, prismaSearchTermFilter],
+				},
+			}),
+		};
 	}
 }

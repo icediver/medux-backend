@@ -6,6 +6,7 @@ import {
 	Param,
 	Patch,
 	Put,
+	Query,
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { UserService } from './user.service';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { UserDto } from './dto/user.dto';
+import { GetAllUserDto } from './dto/get-all-users.dto';
 
 @Controller('users')
 export class UserController {
@@ -30,5 +32,10 @@ export class UserController {
 	@Put('profile')
 	async updateProfile(@CurrentUser('id') id: number, @Body() dto: UserDto) {
 		return this.userService.updateProfile(id, dto);
+	}
+	@UsePipes(new ValidationPipe())
+	@Get()
+	async getAll(@Query() queryDto: GetAllUserDto) {
+		return this.userService.getAll(queryDto);
 	}
 }

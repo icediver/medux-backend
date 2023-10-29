@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { PaginationModule } from './pagination/pagination.module';
 
 @Module({
-	imports: [AuthModule, UserModule],
+	imports: [AuthModule, UserModule, PaginationModule],
 	controllers: [AppController],
 	providers: [AppService, PrismaService],
 })

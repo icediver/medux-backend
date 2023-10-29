@@ -11,7 +11,7 @@ import { UserModule } from 'src/user/user.module';
 
 @Module({
 	controllers: [AuthController],
-	providers: [AuthService, JwtStrategy, PrismaService, UserService],
+	providers: [AuthService, JwtStrategy, PrismaService],
 	imports: [
 		ConfigModule,
 		JwtModule.registerAsync({
@@ -19,7 +19,6 @@ import { UserModule } from 'src/user/user.module';
 			inject: [ConfigService],
 			useFactory: getJwtConfig,
 		}),
-		UserModule,
 	],
 })
 export class AuthModule {}
