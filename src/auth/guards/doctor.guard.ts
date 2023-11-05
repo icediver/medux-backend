@@ -7,13 +7,13 @@ import {
 import { User } from '@prisma/client';
 
 @Injectable()
-export class OnlyAdminGuard implements CanActivate {
+export class OnlyDoctorGuard implements CanActivate {
 	canActivate(context: ExecutionContext): boolean {
 		const request = context.switchToHttp().getRequest<{ user: User }>();
 		const user = request.user;
-		const isAdmin = user.role === 'ADMIN';
+		const isDoctor = user.role === 'DOCTOR' || user.role === 'ADMIN';
 
-		if (!isAdmin) throw new ForbiddenException('You don"t have rights!');
-		return isAdmin;
+		if (!isDoctor) throw new ForbiddenException(`You don"t have rights!`);
+		return isDoctor;
 	}
 }

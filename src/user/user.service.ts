@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { returnUserObject } from './dto/return-user.object';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { UserDto } from './dto/user.dto';
 import { hash } from 'argon2';
 import { GetAllUserDto } from './dto/get-all-users.dto';
@@ -59,19 +59,14 @@ export class UserService {
 		});
 	}
 	async getAll(dto: GetAllUserDto) {
-		const { sort, searchTerm } = dto || {};
+		const { sort, searchTerm, role } = dto || {};
 
 		const prismaFilters: Prisma.UserWhereInput[] = [];
-		//add filters
-		//-----------------------
-		// if (type)
-		// 	prismaFilters.push({
-		// 		apartments: {
-		// 			some: {
-		// 				type
-		// 			}
-		// 		}
-		// 	})
+		//-----filters-----
+		if (role)
+			prismaFilters.push({
+				role: role as Role,
+			});
 
 		const prismaSort: Prisma.UserOrderByWithRelationInput[] = [];
 		if (sort === EnumUserSort.OLDEST) {
@@ -89,12 +84,12 @@ export class UserService {
 								mode: 'insensitive',
 							},
 						},
-						{
-							email: {
-								contains: searchTerm,
-								mode: 'insensitive',
-							},
-						},
+						// {
+						// 	email: {
+						// 		contains: searchTerm,
+						// 		mode: 'insensitive',
+						// 	},
+						// },
 					],
 			  }
 			: {};

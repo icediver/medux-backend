@@ -3,8 +3,6 @@ import {
 	Controller,
 	Get,
 	HttpCode,
-	Param,
-	Patch,
 	Put,
 	Query,
 	UsePipes,

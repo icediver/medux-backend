@@ -11,13 +11,51 @@ datasource db {
 }
 
 model User {
-  id    Int @id @default(autoincrement())
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  email String @unique
-  password String
-  name  String @unique
-  avatarPath String @default("/uploads/default-avatar.png") @map("avatar_path")
-  phone   String @default("")
-  isAdmin Boolean @default (false) @map("isAdmin")
+  id                Int @id @default(autoincrement())
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  email             String @unique
+  password          String
+  name              String @unique
+  avatarPath        String @default("/uploads/default-avatar.png") @map("avatar_path")
+  phone             String @default("")
+  role              Role  @default(PATIENT)
+  speciality        String?
+  doctorAppointments Appointment[] @relation("doctorAppointments") 
+  patientAppointments Appointment[] @relation("patientAppointments")
+}
+
+model Appointment {
+    id              Int @id @default(autoincrement())
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+    description     String
+    type            String
+    date            DateTime
+
+    time            AppointmentTime @relation(fields: [timeId], references: [id])
+    timeId          Int     @map("time_id")
+    patient         User    @relation("patientAppointments",fields: [patientId], references: [id])
+    patientId       Int     @map("patient_id")
+    doctor          User  @relation("doctorAppointments",fields: [doctorId], references: [id])
+    doctorId        Int @map("doctor_id")
+    category        AppointmentCategory @relation(fields: [categoryId], references:[ id ])
+    categoryId      Int @map("category_id")
+
+
+}
+model AppointmentCategory {
+    id              Int @id @default(autoincrement())
+    name            String @unique
+    appointments    Appointment[]
+}
+model AppointmentTime {
+    id              Int @id @default(autoincrement())
+    time            String @unique
+    appointments    Appointment[]
+}
+enum Role {
+  DOCTOR
+  PATIENT
+  ADMIN
 }
