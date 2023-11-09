@@ -4,10 +4,14 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma, Role } from '@prisma/client';
 import { returnUserObject } from 'src/user/dto/return-user.object';
+import { FindAllAppointmentsDto } from './dto/find-all.appointments.dto';
 
 @Injectable()
 export class AppointmentService {
 	constructor(private prisma: PrismaService) {}
+
+	//--------------------Create------------------------//
+
 	create(createAppointmentDto: CreateAppointmentDto, role: Role, id: number) {
 		const { type, timeId, userId, description, categoryId, date } =
 			createAppointmentDto;
@@ -25,8 +29,21 @@ export class AppointmentService {
 		return newAppointments;
 	}
 
-	findAll(id: number) {
-		const appointmentsSearchTerm: Prisma.AppointmentWhereInput = {
+	//--------------------Read--------------------------//
+
+	findAll(id: number, dto: FindAllAppointmentsDto = {}) {
+		const filters = this.createFilters(id, dto);
+
+		const appointments = this.prisma.appointment.findMany({
+			where: filters,
+			select: returnAppointmentObj,
+		});
+		return appointments;
+	}
+
+	private createFilters(id: number, dto: FindAllAppointmentsDto) {
+		const filters: Prisma.AppointmentWhereInput[] = [];
+		const appointmentsSearchById: Prisma.AppointmentWhereInput = {
 			OR: [
 				{
 					patientId: id,
@@ -37,20 +54,36 @@ export class AppointmentService {
 			],
 		};
 
-		const appointments = this.prisma.appointment.findMany({
-			where: appointmentsSearchTerm,
-			select: returnAppointmentObj,
-		});
-		return appointments;
+		if (appointmentsSearchById) filters.push(appointmentsSearchById);
+
+		if (dto) {
+			const { start, end } = dto;
+			filters.push({
+				date: {
+					gte: new Date(start), // Start of date range
+					lte: new Date(end),
+				},
+			});
+		}
+		return filters.length ? { AND: filters } : {};
 	}
 
-	async findOne(id: number) {
+	async findById(id: number) {
 		const appointment = await this.prisma.appointment.findUnique({
 			where: { id },
 			select: returnAppointmentObj,
 		});
 		return appointment;
 	}
+
+	async findByDate(date: string) {
+		const appointment = await this.prisma.appointment.findMany({
+			where: { date: { equals: new Date(date) } },
+		});
+		return appointment;
+	}
+
+	//--------------------Update-----------------------//
 
 	async update(
 		id: number,
@@ -86,6 +119,8 @@ export class AppointmentService {
 			select: returnAppointmentObj,
 		});
 	}
+
+	//--------------------Delete-----------------------//
 
 	remove(id: number) {
 		return this.prisma.appointment.delete({ where: { id } });
