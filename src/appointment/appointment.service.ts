@@ -31,14 +31,22 @@ export class AppointmentService {
 
 	//--------------------Read--------------------------//
 
-	findAll(id: number, dto: FindAllAppointmentsDto = {}) {
+	async findAll(id: number, dto: FindAllAppointmentsDto = {}) {
 		const filters = this.createFilters(id, dto);
 
-		const appointments = this.prisma.appointment.findMany({
+		const appointments = await this.prisma.appointment.findMany({
 			where: filters,
 			select: returnAppointmentObj,
 		});
-		return appointments;
+
+		const dates = this.datesArray(new Date(dto.start), new Date(dto.end));
+		const groupByDates = dates.map(date => ({
+			date: date.toLocaleDateString('sv-SE'),
+			appointments: appointments.filter(
+				app => app.date.getTime() == date.getTime(),
+			),
+		}));
+		return groupByDates;
 	}
 
 	private createFilters(id: number, dto: FindAllAppointmentsDto) {
@@ -68,6 +76,16 @@ export class AppointmentService {
 		return filters.length ? { AND: filters } : {};
 	}
 
+	private datesArray(start: Date, end: Date): Date[] {
+		let result = [],
+			current = new Date(start);
+		while (current <= end)
+			result.push(current) &&
+				(current = new Date(current)) &&
+				current.setDate(current.getDate() + 1);
+		return result;
+	}
+
 	async findById(id: number) {
 		const appointment = await this.prisma.appointment.findUnique({
 			where: { id },
@@ -79,6 +97,7 @@ export class AppointmentService {
 	async findByDate(date: string) {
 		const appointment = await this.prisma.appointment.findMany({
 			where: { date: { equals: new Date(date) } },
+			select: returnAppointmentObj,
 		});
 		return appointment;
 	}

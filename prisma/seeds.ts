@@ -7,31 +7,45 @@ const prisma = new PrismaClient();
 
 async function main() {
 	console.log('Start seeding ...');
-	// createDrivers(100);
-	// await createParcels(200);
-	await createAppointment('2023-11-10');
+	await createAppointment('2023-12-08');
 }
+
 const createAppointment = async (date: string) => {
 	const appointments: Appointment[] = [];
 
-	for (let i = 1; i <= 19; i++) {
-		if (Math.random() > 0.4) {
-			const categoryId = getRandomIntInclusive(1, 5);
-			const catetegory = types.filter(type => type.key === categoryId)[0];
-			const descLength = catetegory.description.length;
-			const appointment = await prisma.appointment.create({
+	for (let i = 1; i <= 18; i++) {
+		const categoryId = i === 7 || i === 8 ? 6 : getRandomIntInclusive(1, 5);
+		const catetegory = types.filter(type => type.key === categoryId)[0];
+		const descLength = catetegory.description.length;
+		if (i === 7 || i === 8) {
+			const lunchBreak = await prisma.appointment.create({
 				data: {
-					description:
-						catetegory.description[getRandomIntInclusive(0, descLength - 1)],
+					description: catetegory.description[0],
 					type: catetegory.value,
 					date: new Date(date),
 					timeId: i,
-					categoryId: categoryId,
+					categoryId,
 					doctorId: 3,
 					patientId: getRandomIntInclusive(5, 8),
 				},
 			});
-			appointments.push(appointment);
+			appointments.push(lunchBreak);
+		} else {
+			if (Math.random() > 0.5) {
+				const appointment = await prisma.appointment.create({
+					data: {
+						description:
+							catetegory.description[getRandomIntInclusive(0, descLength - 1)],
+						type: catetegory.value,
+						date: new Date(date),
+						timeId: i,
+						categoryId: categoryId,
+						doctorId: 3,
+						patientId: getRandomIntInclusive(5, 8),
+					},
+				});
+				appointments.push(appointment);
+			}
 		}
 	}
 	console.log(`Created ${appointments.length} appointments`);
@@ -53,7 +67,7 @@ const types: { key: number; value: string; description: string[] }[] = [
 	{
 		key: 2,
 		value: 'examination',
-		description: ['Ultrasound', 'ECG', 'EEG', 'MRI', 'Labarotory Screeening'],
+		description: ['Ultrasound', 'ECG', 'EEG', 'MRI', 'Screening'],
 	},
 	{
 		key: 3,
@@ -90,8 +104,12 @@ const types: { key: number; value: string; description: string[] }[] = [
 			'Dermatitis',
 		],
 	},
+	{
+		key: 6,
+		value: 'break',
+		description: ['lunch break'],
+	},
 ];
-
 main()
 	.catch(e => {
 		console.error(e);
