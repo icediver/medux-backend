@@ -46,7 +46,7 @@ export class AppointmentController {
 		return this.appointmentService.findAll(id, queryDto);
 	}
 	@Auth()
-	@Get(':id')
+	@Get('by-id/:id')
 	findById(@Param('id') id: string) {
 		return this.appointmentService.findById(+id);
 	}
@@ -54,6 +54,12 @@ export class AppointmentController {
 	@Get('date/:date')
 	findByDate(@Param('date') date: string) {
 		return this.appointmentService.findByDate(date);
+	}
+
+	@Auth()
+	@Get('next')
+	getNextt(@CurrentUser('id') id: number) {
+		return this.appointmentService.getNextAppointment(+id);
 	}
 
 	//--------------------Update-----------------------//

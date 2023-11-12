@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { PrismaService } from 'src/prisma.service';
-import { Prisma, Role } from '@prisma/client';
+import { Appointment, Prisma, Role } from '@prisma/client';
 import { returnUserObject } from 'src/user/dto/return-user.object';
 import { FindAllAppointmentsDto } from './dto/find-all.appointments.dto';
 
@@ -23,7 +23,7 @@ export class AppointmentService {
 				patientId: role === 'PATIENT' ? id : userId,
 				categoryId,
 				timeId,
-				date,
+				date: new Date(date),
 			},
 		});
 		return newAppointments;
@@ -37,6 +37,7 @@ export class AppointmentService {
 		const appointments = await this.prisma.appointment.findMany({
 			where: filters,
 			select: returnAppointmentObj,
+			orderBy: [{ date: 'asc' }, { timeId: 'asc' }],
 		});
 
 		const dates = this.datesArray(new Date(dto.start), new Date(dto.end));
@@ -66,6 +67,8 @@ export class AppointmentService {
 
 		if (dto) {
 			const { start, end } = dto;
+			const gte = start ? { gte: new Date(start) } : {};
+			const lte = end ? { lte: new Date(end) } : {};
 			filters.push({
 				date: {
 					gte: new Date(start), // Start of date range
@@ -100,6 +103,48 @@ export class AppointmentService {
 			select: returnAppointmentObj,
 		});
 		return appointment;
+	}
+
+	async getNextAppointment(id: number) {
+		const start = new Date();
+		const end = new Date(new Date().setMonth(new Date().getMonth() + 1));
+		const currentTime = start.toLocaleTimeString('sv').slice(0, 5);
+		const filters: Prisma.AppointmentWhereInput = {
+			doctorId: id,
+			date: {
+				gte: start,
+				lte: end,
+			},
+			// time: { time: { gt: currentTime } },
+		};
+		const appointments = await this.prisma.appointment.findMany({
+			where: filters,
+
+			select: returnAppointmentObj,
+			orderBy: [{ date: 'asc' }, { timeId: 'asc' }],
+		});
+		const dates = [...new Set(appointments.map(app => app.date))];
+		const groupByDates = dates.map(date => {
+			return {
+				date: date.toLocaleDateString('sv-SE'),
+				appointments: appointments.filter(
+					app => app.date.getTime() == date.getTime(),
+				),
+			};
+		});
+
+		const isToday = currentTime < '17:30';
+
+		if (isToday) {
+			return groupByDates[0].appointments.filter(
+				app => app.time.time > currentTime,
+			)[0];
+		} else {
+			return groupByDates[1].appointments[0];
+		}
+
+		// return groupByDates[0].appointments[0];
+		return isToday;
 	}
 
 	//--------------------Update-----------------------//
@@ -155,3 +200,19 @@ const returnAppointmentObj: Prisma.AppointmentSelect = {
 	category: { select: { id: true, name: true } },
 	date: true,
 };
+
+type AppointmentWithTime = Prisma.AppointmentGetPayload<{
+	include: { time: true };
+}>;
+export function getNext(appointments: AppointmentWithTime[]) {
+	const currentDate = new Date(2023, 10, 11, 9, 30);
+	console.log(currentDate);
+	appointments.map(app => console.log(new Date(app.date)));
+	const appointmentNext = appointments.find(app => {
+		const date = new Date(app.date);
+		date.setHours(+app.time.time.split(':')[0]);
+		date.setMinutes(+app.time.time.split(':')[1]);
+		return date > currentDate;
+	});
+	return appointmentNext;
+}
