@@ -59,7 +59,7 @@ export class UserService {
 		});
 	}
 	async getAll(dto: GetAllUserDto) {
-		const { sort, searchTerm, role } = dto || {};
+		const { sort, searchTerm, role, letter } = dto || {};
 
 		const prismaFilters: Prisma.UserWhereInput[] = [];
 		//-----filters-----
@@ -75,24 +75,22 @@ export class UserService {
 			prismaSort.push({ createdAt: 'desc' });
 		}
 
-		const prismaSearchTermFilter: Prisma.UserWhereInput = searchTerm
-			? {
-					OR: [
-						{
-							name: {
-								contains: searchTerm,
-								mode: 'insensitive',
+		const prismaSearchTermFilter: Prisma.UserWhereInput =
+			searchTerm || letter
+				? {
+						OR: [
+							{
+								name: {
+									contains: searchTerm,
+									mode: 'insensitive',
+								},
 							},
-						},
-						// {
-						// 	email: {
-						// 		contains: searchTerm,
-						// 		mode: 'insensitive',
-						// 	},
-						// },
-					],
-			  }
-			: {};
+							{
+								name: { startsWith: letter, mode: 'insensitive' },
+							},
+						],
+				  }
+				: {};
 
 		const { perPage, skip } = this.paginationService.getPagination(dto);
 

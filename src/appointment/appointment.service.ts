@@ -106,9 +106,9 @@ export class AppointmentService {
 	}
 
 	async getNextAppointment(id: number) {
-		const start = new Date();
+		const start = new Date(new Date().toLocaleDateString('sv-SE'));
 		const end = new Date(new Date().setMonth(new Date().getMonth() + 1));
-		const currentTime = start.toLocaleTimeString('sv').slice(0, 5);
+		const currentTime = new Date().toLocaleTimeString('sv').slice(0, 5);
 		const filters: Prisma.AppointmentWhereInput = {
 			doctorId: id,
 			date: {
@@ -123,16 +123,17 @@ export class AppointmentService {
 			select: returnAppointmentObj,
 			orderBy: [{ date: 'asc' }, { timeId: 'asc' }],
 		});
-		const dates = [...new Set(appointments.map(app => app.date))];
+		const dates = [
+			...new Set(appointments.map(app => app.date.toLocaleDateString('sv-SE'))),
+		];
 		const groupByDates = dates.map(date => {
 			return {
-				date: date.toLocaleDateString('sv-SE'),
+				date,
 				appointments: appointments.filter(
-					app => app.date.getTime() == date.getTime(),
+					app => app.date.toLocaleDateString('sv-SE') == date,
 				),
 			};
 		});
-
 		const isToday = currentTime < '17:30';
 
 		if (isToday) {

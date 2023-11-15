@@ -14,4 +14,8 @@ export class GetAllUserDto extends PaginationDto {
 	@IsOptional()
 	@IsString()
 	role?: string;
+
+	@IsOptional()
+	@IsString()
+	letter?: string;
 }
